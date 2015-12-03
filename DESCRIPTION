@@ -1,9 +1,16 @@
 Package: DBDA2
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
+Title: R code from Doing Bayesian Data Analysis, 2nd ed., by John Kruschke
+Version: 0.1
 Date: 2015-12-01
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
+Author: John Kruschke <johnkruschke@gmail.com>
+Maintainer: Paul Teetor <paulteetor@yahoo.com>
+Description: R code from Doing Bayesian Data Analysis, 2nd ed., by John Kruschke.
+    This encapsulates the code, data, and pacakge dependencies into one, convenient package.
+Depends:
+    coda,
+    compute.es,
+    parallel,
+    rjags,
+    runjags
 License: What license is it under?
