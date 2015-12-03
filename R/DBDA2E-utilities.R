@@ -211,9 +211,6 @@ HDIofGrid = function( probMassVec , credMass=0.95 ) {
 #'
 #' @export
 #'
-#' @examples
-#'
-#'
 DbdaAcfPlot = function( codaObject , parName=varnames(codaObject)[1] , plColors=NULL ) {
   if ( all( parName != varnames(codaObject) ) ) { 
     stop("parName must be a column name of coda object")
