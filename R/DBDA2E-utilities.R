@@ -8,57 +8,43 @@
 
 #------------------------------------------------------------------------------
 
-## prt, Moved to package init function:
-## bookInfo = "Kruschke, J. K. (2015). Doing Bayesian Data Analysis, Second Edition:\nA Tutorial with R, JAGS, and Stan. Academic Press / Elsevier."
-## bannerBreak = "\n*********************************************************************\n"
-## cat(paste0(bannerBreak,bookInfo,bannerBreak,"\n"))
+bookInfo = "Kruschke, J. K. (2015). Doing Bayesian Data Analysis, Second Edition:\nA Tutorial with R, JAGS, and Stan. Academic Press / Elsevier."
+bannerBreak = "\n*********************************************************************\n"
+cat(paste0(bannerBreak,bookInfo,bannerBreak,"\n"))
 
 #------------------------------------------------------------------------------
-## prt, Moved to DESCRIPTION file (Depends: ...):
 # Check that required packages are installed:
-## want = c("parallel","rjags","runjags","compute.es")
-## have = want %in% rownames(installed.packages())
-## if ( any(!have) ) { install.packages( want[!have] ) }
+want = c("parallel","rjags","runjags","compute.es")
+have = want %in% rownames(installed.packages())
+if ( any(!have) ) { install.packages( want[!have] ) }
 
 # Load rjags. Assumes JAGS is already installed.
-## try( library(rjags) )
+try( library(rjags) )
 # Load runjags. Assumes JAGS is already installed.
-## try( library(runjags) )
+try( library(runjags) )
+try( runjags.options( inits.warning=FALSE , rng.warning=FALSE ) )
 
-## TODO: Move to .onLoad or .onAttach?
-## try( runjags.options( inits.warning=FALSE , rng.warning=FALSE ) )
-
-## TODO: Move to .onLoad or .onAttach?:
 # set default number of chains and parallelness for MCMC:
-## library(parallel) # for detectCores().
-## nCores = detectCores() 
-## if ( !is.finite(nCores) ) { nCores = 1 } 
-## if ( nCores > 4 ) { 
-##   nChainsDefault = 4  # because JAGS has only 4 rng's.
-##   runjagsMethodDefault = "parallel"
-## }
-## if ( nCores == 4 ) { 
-##   nChainsDefault = 3  # save 1 core for other processes.
-##   runjagsMethodDefault = "parallel"
-## }
-## if ( nCores < 4 ) { 
-##   nChainsDefault = 3 
-##   runjagsMethodDefault = "rjags" # NOT parallel
-## }
+library(parallel) # for detectCores().
+nCores = detectCores() 
+if ( !is.finite(nCores) ) { nCores = 1 } 
+if ( nCores > 4 ) { 
+  nChainsDefault = 4  # because JAGS has only 4 rng's.
+  runjagsMethodDefault = "parallel"
+}
+if ( nCores == 4 ) { 
+  nChainsDefault = 3  # save 1 core for other processes.
+  runjagsMethodDefault = "parallel"
+}
+if ( nCores < 4 ) { 
+  nChainsDefault = 3 
+  runjagsMethodDefault = "rjags" # NOT parallel
+}
 
 #------------------------------------------------------------------------------
 # Functions for opening and saving graphics that operate the same for 
 # Windows and Macintosh and Linux operating systems. At least, that's the hope!
 
-#'
-#'  openGraph function
-#'
-#'  @param width Width of graph (inches)
-#'  @param height Height of graph (inches)
-#'  @param mag Magnification factor
-#'
-#'  @export
-#'
 openGraph = function( width=7 , height=7 , mag=1.0 , ... ) {
   if ( .Platform$OS.type != "windows" ) { # Mac OS, Linux
     tryInfo = try( X11( width=width*mag , height=height*mag , type="cairo" , 
@@ -78,14 +64,6 @@ openGraph = function( width=7 , height=7 , mag=1.0 , ... ) {
   }
 }
 
-#'
-#'  saveGraph function
-#'
-#'  @param file File name, without extension
-#'  @param type File type, such as "pdf", "png", "jpeg", "jpg", "tiff", or "bmp"
-#'
-#'  @export
-#'
 saveGraph = function( file="saveGraphOutput" , type="pdf" , ... ) {
   if ( .Platform$OS.type != "windows" ) { # Mac OS, Linux
     if ( any( type == c("png","jpeg","jpg","tiff","bmp")) ) {
@@ -108,21 +86,17 @@ saveGraph = function( file="saveGraphOutput" , type="pdf" , ... ) {
 #------------------------------------------------------------------------------
 # Functions for computing limits of HDI's:
 
-#'
-#'  Compute highest density interval (HDI) from sample
-#'
-#'  Computes highest density interval from a sample of representative values,
-#'  estimated as shortest credible interval.
-#'
-#'  @param sampleVec A vector of representative values from a probability distribution.
-#'  @param credMass A scalar between 0 and 1, indicating the mass within the credible
-#'      interval that is to be estimated.
-#'
-#'  @return A 2-element vector containing the limits of the HDI
-#'
-#'  @export
-#'
 HDIofMCMC = function( sampleVec , credMass=0.95 ) {
+  # Computes highest density interval from a sample of representative values,
+  #   estimated as shortest credible interval.
+  # Arguments:
+  #   sampleVec
+  #     is a vector of representative values from a probability distribution.
+  #   credMass
+  #     is a scalar between 0 and 1, indicating the mass within the credible
+  #     interval that is to be estimated.
+  # Value:
+  #   HDIlim is a vector containing the limits of the HDI
   sortedPts = sort( sampleVec )
   ciIdxInc = ceiling( credMass * length( sortedPts ) )
   nCIs = length( sortedPts ) - ciIdxInc
@@ -136,29 +110,19 @@ HDIofMCMC = function( sampleVec , credMass=0.95 ) {
   return( HDIlim )
 }
 
-#'
-#'  Determine HDI from inverse cumulative density function
-#'
-#'  Notice that the parameters of the ICDFname must be explicitly named;
-#'  e.g., HDIofICDF(qbeta, 30, 12) does not work,
-#'  use HDIofICDF(qbeta, shape1=30, shape2=12) instead.
-#'
-#'  Adapted and corrected from Greg Snow's TeachingDemos package.
-#'
-#'  @param ICDFname R's name for the inverse cumulative density function
-#'      of the distribution (qnorm, qbeta, etc.)
-#'  @param credMass Desired mass of the HDI region.
-#'  @param tol Passed to R's optimize function.
-#'
-#'  @return Highest density iterval (HDI) limits in a vector.
-#'
-#'  @export
-#'
-#' @examples
-#' # Deterine HDI of a beta(30,12) distribution
-#' HDIofICDF( qbeta , shape1 = 30 , shape2 = 12 )
-#'
 HDIofICDF = function( ICDFname , credMass=0.95 , tol=1e-8 , ... ) {
+  # Arguments:
+  #   ICDFname is R's name for the inverse cumulative density function
+  #     of the distribution.
+  #   credMass is the desired mass of the HDI region.
+  #   tol is passed to R's optimize function.
+  # Return value:
+  #   Highest density iterval (HDI) limits in a vector.
+  # Example of use: For determining HDI of a beta(30,12) distribution, type
+  #   HDIofICDF( qbeta , shape1 = 30 , shape2 = 12 )
+  #   Notice that the parameters of the ICDFname must be explicitly named;
+  #   e.g., HDIofICDF( qbeta , 30 , 12 ) does not work.
+  # Adapted and corrected from Greg Snow's TeachingDemos package.
   incredMass =  1.0 - credMass
   intervalWidth = function( lowTailPr , ICDFname , credMass , ... ) {
     ICDFname( credMass + lowTailPr , ... ) - ICDFname( lowTailPr , ... )
@@ -170,27 +134,21 @@ HDIofICDF = function( ICDFname , credMass=0.95 , tol=1e-8 , ... ) {
              ICDFname( credMass + HDIlowTailPr , ... ) ) )
 }
 
-#'
-#' HDI via grid approximation
-#'
-#' @param probMassVec A vector of probability masses at each grid point.
-#' @param credMass The desired mass of the HDI region.
-#'
-#' @return A list with components:
-#'   indices is a vector of indices that are in the HDI
-#'   mass is the total mass of the included indices
-#'   height is the smallest component probability mass in the HDI
-#'
-#' @export
-#'
-#' @examples
-#' # Determine HDI of a beta(30,12) distribution approximated on a grid
-#' probDensityVec = dbeta( seq(0,1,length=201) , 30 , 12 )
-#' probMassVec = probDensityVec / sum( probDensityVec )
-#' HDIinfo = HDIofGrid( probMassVec )
-#' show( HDIinfo )
-#'
 HDIofGrid = function( probMassVec , credMass=0.95 ) {
+  # Arguments:
+  #   probMassVec is a vector of probability masses at each grid point.
+  #   credMass is the desired mass of the HDI region.
+  # Return value:
+  #   A list with components:
+  #   indices is a vector of indices that are in the HDI
+  #   mass is the total mass of the included indices
+  #   height is the smallest component probability mass in the HDI
+  # Example of use: For determining HDI of a beta(30,12) distribution
+  #   approximated on a grid:
+  #   > probDensityVec = dbeta( seq(0,1,length=201) , 30 , 12 )
+  #   > probMassVec = probDensityVec / sum( probDensityVec )
+  #   > HDIinfo = HDIofGrid( probMassVec )
+  #   > show( HDIinfo )
   sortedProbMass = sort( probMassVec , decreasing=TRUE )
   HDIheightIdx = min( which( cumsum( sortedProbMass ) >= credMass ) )
   HDIheight = sortedProbMass[ HDIheightIdx ]
@@ -202,15 +160,6 @@ HDIofGrid = function( probMassVec , credMass=0.95 ) {
 #------------------------------------------------------------------------------
 # Function(s) for plotting properties of mcmc coda objects.
 
-#'
-#'  DbdaAcfPlot function
-#'
-#' @param codaObject
-#' @param parName
-#' @param plColors
-#'
-#' @export
-#'
 DbdaAcfPlot = function( codaObject , parName=varnames(codaObject)[1] , plColors=NULL ) {
   if ( all( parName != varnames(codaObject) ) ) { 
     stop("parName must be a column name of coda object")
@@ -232,7 +181,6 @@ DbdaAcfPlot = function( codaObject , parName=varnames(codaObject)[1] , plColors=
         labels=paste("ESS =",round(EffChnLngth,1)) )
 }
 
-#' @export
 DbdaDensPlot = function( codaObject , parName=varnames(codaObject)[1] , plColors=NULL ) {
   if ( all( parName != varnames(codaObject) ) ) { 
     stop("parName must be a column name of coda object")
@@ -260,7 +208,6 @@ DbdaDensPlot = function( codaObject , parName=varnames(codaObject)[1] , plColors
         paste("MCSE =\n",signif(MCSE,3)) )
 }
 
-#' @export
 diagMCMC = function( codaObject , parName=varnames(codaObject)[1] ,
                      saveName=NULL , saveType="jpg" ) {
   DBDAplColors = c("skyblue","black","royalblue","steelblue")
@@ -294,7 +241,6 @@ diagMCMC = function( codaObject , parName=varnames(codaObject)[1] ,
   }
 }
 
-#' @export
 diagStanFit = function( stanFit , parName ,
                         saveName=NULL , saveType="jpg" ) {
   codaFit = mcmc.list( lapply( 1:ncol(stanFit) , 
@@ -336,21 +282,8 @@ diagStanFit = function( stanFit , parName ,
 
 normalize = function( v ){ return( v / sum(v) ) }
 
-## prt, Moved to DESCRIPTION:
-## require(coda) # loaded by rjags, but redundancy doesn't hurt
+require(coda) # loaded by rjags, but redundancy doesn't hurt
 
-#'
-#' Summarize distribution of a large sample
-#'
-#' @param paramSampleVec
-#' @param compVal
-#' @param ROPE
-#' @param credMass
-#'
-#' @return Named vector of summary statistics
-#'
-#' @export
-#'
 summarizePost = function( paramSampleVec , 
                           compVal=NULL , ROPE=NULL , credMass=0.95 ) {
   meanParam = mean( paramSampleVec )
@@ -387,23 +320,6 @@ summarizePost = function( paramSampleVec ,
              PcntLtROPE=pcltRope , PcntInROPE=pcinRope , PcntGtROPE=pcgtRope ) )
 }
 
-#'
-#' Plot distribution of a large sample
-#'
-#' This is typically applied to the MCMC posterior.
-#'
-#' @param paramSampleVec
-#' @param cenTend
-#' @param compVal
-#' @param ROPE
-#' @param credMass
-#' @param HDItextPlace
-#' @param ... Additional arguments, passed to hist() function
-#'
-#' @return Matrix of statistics to summarize posterior distribution
-#'
-#' @export
-#'
 plotPost = function( paramSampleVec , cenTend=c("mode","median","mean")[1] , 
                      compVal=NULL, ROPE=NULL, credMass=0.95, HDItextPlace=0.7, 
                      xlab=NULL , xlim=NULL , yaxt=NULL , ylab=NULL , 
@@ -547,7 +463,6 @@ plotPost = function( paramSampleVec , cenTend=c("mode","median","mean")[1] ,
 
 # Shape parameters from central tendency and scale:
 
-#' @export
 betaABfromMeanKappa = function( mean , kappa ) {
   if ( mean <=0 | mean >= 1) stop("must have 0 < mean < 1")
   if ( kappa <=0 ) stop("kappa must be > 0")
@@ -556,7 +471,6 @@ betaABfromMeanKappa = function( mean , kappa ) {
   return( list( a=a , b=b ) )
 }
 
-#' @export
 betaABfromModeKappa = function( mode , kappa ) {
   if ( mode <=0 | mode >= 1) stop("must have 0 < mode < 1")
   if ( kappa <=2 ) stop("kappa must be > 2 for mode parameterization")
@@ -565,7 +479,6 @@ betaABfromModeKappa = function( mode , kappa ) {
   return( list( a=a , b=b ) )
 }
 
-#' @export
 betaABfromMeanSD = function( mean , sd ) {
   if ( mean <=0 | mean >= 1) stop("must have 0 < mean < 1")
   if ( sd <= 0 ) stop("sd must be > 0")
@@ -576,7 +489,6 @@ betaABfromMeanSD = function( mean , sd ) {
   return( list( a=a , b=b ) )
 }
 
-#' @export
 gammaShRaFromMeanSD = function( mean , sd ) {
   if ( mean <=0 ) stop("mean must be > 0")
   if ( sd <=0 ) stop("sd must be > 0")
@@ -585,7 +497,6 @@ gammaShRaFromMeanSD = function( mean , sd ) {
   return( list( shape=shape , rate=rate ) )
 }
 
-#' @export
 gammaShRaFromModeSD = function( mode , sd ) {
   if ( mode <=0 ) stop("mode must be > 0")
   if ( sd <=0 ) stop("sd must be > 0")
@@ -597,15 +508,10 @@ gammaShRaFromModeSD = function( mode , sd ) {
 #------------------------------------------------------------------------------
 
 # Make some data files for examples...
-
-## prt, Turned this into a function:
-## createDataFiles=FALSE
-
-#' @export
-createDataFiles = function() {
+createDataFiles=FALSE
+if ( createDataFiles ) {
   
-  ## source("HtWtDataGenerator.R")
-
+  source("HtWtDataGenerator.R")
   N=300
   m = HtWtDataGenerator( N , rndsd=47405 )
   write.csv( file=paste0("HtWtData",N,".csv") , row.names=FALSE , m )
@@ -646,4 +552,4 @@ createDataFiles = function() {
   y = round( rgamma( 153 , shape=desiredShape , rate=desiredRate ) , 2 )
   write.csv( file="OneGroupGamma.csv" , row.names=FALSE , cbind(y) )
   
-} # end createDataFiles
+} # end if createDataFiles

@@ -1,26 +1,3 @@
-#'
-#'  BernBeta function
-#'
-#'  @param priorBetaAB Two-element vector of beta a,b shape parameters
-#'  @param Data Vector of 0's and 1's.
-#'  @param plotType
-#'  @param showCentTend
-#'  @param showHDI
-#'  @param HDImass
-#'  @param showpD
-#'  @param ROPE
-#'
-#'  @return Updated values of priorBetaAB
-#'
-#'  @export
-#'
-#' @examples
-#' BernBeta(c(1,1), c())
-#' BernBeta(c(1,1), c(1))
-#' BernBeta(c(1,1), c(0))
-#' BernBeta(c(0.5,0.5), c(1,1))
-#' BernBeta(c(0.5,0.5), c(1,0))
-#'
 BernBeta = function( priorBetaAB , Data , plotType=c("Points","Bars")[2] ,
                      showCentTend=c("Mean","Mode","None")[3] ,
                      showHDI=c(TRUE,FALSE)[2] , HDImass=0.95 ,
@@ -137,6 +114,8 @@ BernBeta = function( priorBetaAB , Data , plotType=c("Points","Bars")[2] ,
           paste0(ROPE[1],"<",round(pInRope,4)*100,"%<",ROPE[2]) ,
           adj=c(0.5,-0.15) , cex=1.2 , col=ropeCol )    
   }
+  
+  
   
   # Plot the likelihood: p(Data|Theta)
   plot( Theta , pDataGivenTheta , type=plotType , 
