@@ -1,13 +1,26 @@
+#'
+#' Random height, weight generator for males and females
+#'
+#' Random height, weight generator for males and females. Uses parameters from
+#' Brainard, J. & Burmaster, D. E. (1992). Bivariate distributions for height and
+#' weight of men and women in the United States. Risk Analysis, 12(2), 267-275.
+#'
+#' @param nSubj Number of subjects
+#' @param rndsd Seed for random number generator
+#' @param maleProb Probability of generating male height
+#'
+#' @return
+#'
+#' @export
+#'
 HtWtDataGenerator = function( nSubj , rndsd=NULL , maleProb=0.50 ) {
-  # Random height, weight generator for males and females. Uses parameters from
-  # Brainard, J. & Burmaster, D. E. (1992). Bivariate distributions for height and
-  # weight of men and women in the United States. Risk Analysis, 12(2), 267-275.
   # Kruschke, J. K. (2011). Doing Bayesian data analysis:
   # A Tutorial with R and BUGS. Academic Press / Elsevier.
   # Kruschke, J. K. (2014). Doing Bayesian data analysis, 2nd Edition:
   # A Tutorial with R, JAGS and Stan. Academic Press / Elsevier.
   
-  require(MASS)
+  ## prt, Converted code to use explicit MASS:: instead
+  ## require(MASS)
   
   # Specify parameters of multivariate normal (MVN) distributions.
   # Men:
@@ -49,11 +62,11 @@ HtWtDataGenerator = function( nSubj , rndsd=NULL , maleProb=0.50 ) {
     # Flip coin to decide sex
     sex = sample( c(maleval,femaleval) , size=1 , replace=TRUE , 
                   prob=c(maleProb,1-maleProb) )
-    if ( sex == maleval ) { datum = mvrnorm(n = 1, mu=Mmean, Sigma=Msigma ) }
+    if ( sex == maleval ) { datum = MASS::mvrnorm(n = 1, mu=Mmean, Sigma=Msigma ) }
     if ( sex == femaleval ) {
       Fclust = sample( c(1,2) , size=1 , replace=TRUE , prob=c(prop1,prop2) )
-      if ( Fclust == 1 ) { datum = mvrnorm(n = 1, mu=Fmean1, Sigma=Fsigma1 ) }
-      if ( Fclust == 2 ) { datum = mvrnorm(n = 1, mu=Fmean2, Sigma=Fsigma2 ) }
+      if ( Fclust == 1 ) { datum = MASS::mvrnorm(n = 1, mu=Fmean1, Sigma=Fsigma1 ) }
+      if ( Fclust == 2 ) { datum = MASS::mvrnorm(n = 1, mu=Fmean2, Sigma=Fsigma2 ) }
     }
     datamatrix[ i , ] = c( sex , round( c( datum[1] , exp( datum[2] ) ) , 1 ) )
   }

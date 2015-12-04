@@ -1,10 +1,24 @@
+#'
+#'  BernGrid function
+#'
+#'  @param Theta Vector of values between 0 and 1.
+#'  @param pTheta Prior probability mass at each value of Theta
+#'  @param Data Vector of 0's and 1's.
+#'  @param plotType
+#'  @param showCentTend
+#'  @param showHDI
+#'  @param HDImass
+#'  @param showpD
+#'  @param nToPlot
+#'
+#' @return Updated p(Theta), based on the input data
+#'
+#' @export
+#'
 BernGrid = function( Theta , pTheta , Data , plotType=c("Points","Bars")[2] ,
                      showCentTend=c("Mean","Mode","None")[3] ,
                      showHDI=c(TRUE,FALSE)[2] , HDImass=0.95 ,
                      showpD=c(TRUE,FALSE)[2] , nToPlot=length(Theta) ) {
-  # Theta is vector of values between 0 and 1.
-  # pTheta is prior probability mass at each value of Theta
-  # Data is vector of 0's and 1's.
   
   # Check for input errors:
   if ( any( Theta > 1 | Theta < 0 ) ) {

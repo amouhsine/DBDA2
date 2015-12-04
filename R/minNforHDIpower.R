@@ -1,3 +1,22 @@
+#'
+#'  minNforHDIpower function
+#'
+#'  @param genPriorMode
+#'  @param genPriorN
+#'  @param HDImaxwid
+#'  @param nullVal
+#'  @param ROPE
+#'  @param desiredPower
+#'  @param audPriorMode
+#'  @param audPriorN
+#'  @param HDImass
+#'  @param initSampSize
+#'  @param verbose
+#'
+#' @return Returns the sample size that achieved the desired power.
+#'
+#' @export
+#'
 minNforHDIpower = function( genPriorMode , genPriorN ,
                             HDImaxwid=NULL , nullVal=NULL , 
                             ROPE=c(max(0,nullVal-.02),min(1,nullVal+.02)) ,
@@ -8,7 +27,8 @@ minNforHDIpower = function( genPriorMode , genPriorN ,
     stop("One and only one of HDImaxwid and nullVal must be specified.")
   }
   # Load HDIofICDF function if not already present:
-  if ( !exists("HDIofICDF") ) source("DBDA2E-utilities.R")
+  ## prt, Moved to library
+  ## if ( !exists("HDIofICDF") ) source("DBDA2E-utilities.R")
   # Convert prior mode and N to a,b parameters of beta distribution:
   genPriorA = genPriorMode * (genPriorN-2) + 1
   genPriorB = ( 1.0 - genPriorMode ) * (genPriorN-2) + 1

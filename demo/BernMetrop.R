@@ -1,7 +1,5 @@
 graphics.off()
-rm(list=ls(all=TRUE))
 fileNameRoot="BernMetrop" # for output filenames
-source("DBDA2E-utilities.R")
 
 # Specify the data, to be used in the likelihood function.
 myData = c(rep(0,6),rep(1,14))

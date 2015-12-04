@@ -269,7 +269,8 @@ diagMCMC = function( codaObject , parName=varnames(codaObject)[1] ,
        cex.lab=1.5 )
   layout(matrix(1:4,nrow=2))
   # traceplot and gelman.plot are from CODA package:
-  require(coda)
+  ## prt, Moved to DESCRIPTION
+  ## require(coda)
   coda::traceplot( codaObject[,c(parName)] , main="" , ylab="Param. Value" ,
                    col=DBDAplColors ) 
   tryVal = try(
@@ -304,10 +305,12 @@ diagStanFit = function( stanFit , parName ,
   par( mar=0.5+c(3,4,1,0) , oma=0.1+c(0,0,2,0) , mgp=c(2.25,0.7,0) , cex.lab=1.5 )
   layout(matrix(1:4,nrow=2))
   # traceplot is from rstan package
-  require(rstan)
+  ## prt, Moved to DESCRIPTION
+  ## require(rstan)
   traceplot(stanFit,pars=parName,nrow=1,ncol=1)#,main="",ylab="Param. Value",col=DBDAplColors) 
   # gelman.plot are from CODA package:
-  require(coda)
+  ## prt, Moved to DESCRIPTION
+  ## require(coda)
   tryVal = try(
     coda::gelman.plot( codaObject[,c(parName)] , main="" , auto.layout=FALSE , 
                        col=DBDAplColors )
@@ -435,7 +438,7 @@ plotPost = function( paramSampleVec , cenTend=c("mode","median","mean")[1] ,
                         dimnames=list( c( xlab ) , summaryColNames ) )
   
   # require(coda) # for effectiveSize function
-  postSummary[,"ESS"] = effectiveSize(paramSampleVec)
+  postSummary[,"ESS"] = coda::effectiveSize(paramSampleVec)
   
   postSummary[,"mean"] = mean(paramSampleVec)
   postSummary[,"median"] = median(paramSampleVec)
