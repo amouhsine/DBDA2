@@ -9,7 +9,7 @@
 #' @param rndsd Seed for random number generator
 #' @param maleProb Probability of generating male height
 #'
-#' @return
+#' @return Three-column matrix of random weights and heights
 #'
 #' @export
 #'

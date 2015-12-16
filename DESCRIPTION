@@ -13,5 +13,6 @@ Depends:
     parallel,
     rjags,
     runjags
+LazyData: true
 License: What license is it under?
 Suggests: testthat

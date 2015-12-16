@@ -5,19 +5,15 @@
 ## Data
 * Capture .CSV data in .RData files
 
-## Scripts
+## Scripts and Examples
 * Strip out
     + source()
     + rm(ls(...)) !!
+    + require()
 * read.csv() becomes read of pkg .RData file
 
-## Examples
-* Strip out
-    + source()
-    + rm(ls(...)) !!
-
 ## General
-    + Transform library() calls to package dependencies
+    + Transform library() and require() calls to package dependencies, both installing and loading
     + Create tests
     + Get the copyright/LICENSE stuff right
     + Get the various DESCRIPTION fields right
