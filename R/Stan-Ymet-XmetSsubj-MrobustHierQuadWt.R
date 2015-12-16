@@ -1,15 +1,13 @@
-# Jags-Ymet-XmetSsubj-MrobustHierQuadWt.R 
+# Stan-Ymet-XmetSsubj-MrobustHierQuadWt.R 
 # Accompanies the book:
-#   Kruschke, J. K. (2015). Doing Bayesian Data Analysis, Second Edition: 
-#   A Tutorial with R, JAGS, and Stan. Academic Press / Elsevier.
+#   Kruschke, J. K. (2014). Doing Bayesian Data Analysis: 
+#   A Tutorial with R, JAGS, and Stan 2nd Edition. Academic Press / Elsevier.
 #===============================================================================
 
-Jags.Ymet.XmetSsubj.MrobustHierQuadWt = function() {
+##  require(rstan)
+Stan.Ymet.XmetSsubj.MrobustHierQuadWt = function() {
 genMCMC <<- function( data , xName="x" , yName="y" , sName="s" , wName=NULL ,
-                    numSavedSteps=10000 , thinSteps = 1 , saveName=NULL ,
-                    runjagsMethod=runjagsMethodDefault , 
-                    nChains=nChainsDefault ) { 
-
+                    numSavedSteps=10000 , thinSteps = 1 , saveName=NULL ) { 
   #-----------------------------------------------------------------------------
   # THE DATA.
   y = data[,yName]
@@ -30,58 +28,97 @@ genMCMC <<- function( data , xName="x" , yName="y" , sName="s" , wName=NULL ,
     y = y ,
     s = s ,
     w = w ,
-    Nsubj = max(s)  # should equal length(unique(s))
+    Nsubj = max(s)  , # should equal length(unique(s))
+    Ntotal = length(y)
   )
   #-----------------------------------------------------------------------------
   # THE MODEL.
+  
   modelString = "
-  # Standardize the data:
   data {
-    Ntotal <- length(y)
-    xm <- mean(x)
-    ym <- mean(y)
-    wm <- mean(w)
-    xsd <- sd(x)
-    ysd <- sd(y)
-    for ( i in 1:length(y) ) {
-      zx[i] <- ( x[i] - xm ) / xsd
-      zy[i] <- ( y[i] - ym ) / ysd
-      zw[i] <- w[i] / wm 
+    int<lower=1> Nsubj ;
+    int<lower=1> Ntotal ;
+    real y[Ntotal] ;
+    real x[Ntotal] ;
+    real<lower=0> w[Ntotal] ;
+    int<lower=1> s[Ntotal] ;
+  }
+  transformed data {
+    // Standardize the data:
+    real zx[Ntotal] ;
+    real zy[Ntotal] ;
+    real zw[Ntotal] ;
+    real wm ;
+    real xm ;
+    real ym ;
+    real xsd ;
+    real ysd ;
+    xm <- mean(x) ;
+    ym <- mean(y) ;
+    wm <- mean(w) ;
+    xsd <- sd(x) ;
+    ysd <- sd(y) ;
+    for ( i in 1:Ntotal ) { // could be vectorized...?
+      zx[i] <- ( x[i] - xm ) / xsd ; 
+      zy[i] <- ( y[i] - ym ) / ysd ; 
+      zw[i] <- w[i] / wm  ;
     }
   }
-  # Specify the model for standardized data:
+  parameters {
+    real zbeta0[Nsubj] ;
+    real zbeta1[Nsubj] ;
+    real zbeta2[Nsubj] ;
+    real<lower=0> zsigma ;
+    real zbeta0mu ; 
+    real zbeta1mu ; 
+    real zbeta2mu ; 
+    real<lower=0> zbeta0sigma ;
+    real<lower=0> zbeta1sigma ;
+    real<lower=0> zbeta2sigma ;
+    real<lower=0> nuMinusOne ;
+  }
+  transformed parameters {
+    real<lower=0> nu ;
+    real beta0[Nsubj] ;
+    real beta1[Nsubj] ;
+    real beta2[Nsubj] ;
+    real<lower=0> sigma ;
+    real beta0mu ; 
+    real beta1mu ; 
+    real beta2mu ; 
+    nu <- nuMinusOne+1 ;
+    // Transform to original scale:
+    for ( j in 1:Nsubj ) { // could be vectorized...?
+      beta2[j] <- zbeta2[j]*ysd/square(xsd) ;
+      beta1[j] <- zbeta1[j]*ysd/xsd - 2*zbeta2[j]*xm*ysd/square(xsd) ;
+      beta0[j] <- zbeta0[j]*ysd  + ym - zbeta1[j]*xm*ysd/xsd + zbeta2[j]*square(xm)*ysd/square(xsd) ;
+    }
+    beta2mu <- zbeta2mu*ysd/square(xsd) ;
+    beta1mu <- zbeta1mu*ysd/xsd - 2*zbeta2mu*xm*ysd/square(xsd) ;
+    beta0mu <- zbeta0mu*ysd  + ym - zbeta1mu*xm*ysd/xsd + zbeta2mu*square(xm)*ysd/square(xsd) ;
+    sigma <- zsigma * ysd ;
+  } 
   model {
+    zbeta0mu ~ normal( 0 , 10 ) ;
+    zbeta1mu ~ normal( 0 , 10 ) ;
+    zbeta2mu ~ normal( 0 , 10 ) ;
+    zsigma ~ uniform( 1.0E-3 , 1.0E+3 ) ;
+    zbeta0sigma ~ uniform( 1.0E-3 , 1.0E+3 ) ;
+    zbeta1sigma ~ uniform( 1.0E-3 , 1.0E+3 ) ;
+    zbeta2sigma ~ uniform( 1.0E-3 , 1.0E+3 ) ;
+    nuMinusOne ~ exponential(1/29.0) ;
+    zbeta0 ~ normal( zbeta0mu , zbeta0sigma ) ; // vectorized
+    zbeta1 ~ normal( zbeta1mu , zbeta1sigma ) ; // vectorized
+    zbeta2 ~ normal( zbeta2mu , zbeta2sigma ) ; // vectorized
     for ( i in 1:Ntotal ) {
-      zy[i] ~ dt( zbeta0[s[i]] + zbeta1[s[i]] * zx[i] + zbeta2[s[i]] * zx[i]^2 , 
-                  1/(zw[i]*zsigma)^2 , nu )
+      zy[i] ~ student_t( 
+                nu ,
+                zbeta0[s[i]] + zbeta1[s[i]] * zx[i] + zbeta2[s[i]] * square(zx[i]) , 
+                zw[i]*zsigma ) ;
     }
-    for ( j in 1:Nsubj ) {
-      zbeta0[j] ~ dnorm( zbeta0mu , 1/(zbeta0sigma)^2 )  
-      zbeta1[j] ~ dnorm( zbeta1mu , 1/(zbeta1sigma)^2 )
-      zbeta2[j] ~ dnorm( zbeta2mu , 1/(zbeta2sigma)^2 )
-    }
-    # Priors vague on standardized scale:
-    zbeta0mu ~ dnorm( 0 , 1/(10)^2 )
-    zbeta1mu ~ dnorm( 0 , 1/(10)^2 )
-    zbeta2mu ~ dnorm( 0 , 1/(10)^2 )
-    zsigma ~ dunif( 1.0E-3 , 1.0E+3 )
-    zbeta0sigma ~ dunif( 1.0E-3 , 1.0E+3 )
-    zbeta1sigma ~ dunif( 1.0E-3 , 1.0E+3 )
-    zbeta2sigma ~ dunif( 1.0E-3 , 1.0E+3 )
-    nu <- nuMinusOne+1
-    nuMinusOne ~ dexp(1/29.0)
-    # Transform to original scale:
-    for ( j in 1:Nsubj ) {
-      beta2[j] <- zbeta2[j]*ysd/xsd^2
-      beta1[j] <- zbeta1[j]*ysd/xsd - 2*zbeta2[j]*xm*ysd/xsd^2  
-      beta0[j] <- zbeta0[j]*ysd  + ym - zbeta1[j]*xm*ysd/xsd + zbeta2[j]*xm^2*ysd/xsd^2 
-    }
-    beta2mu <- zbeta2mu*ysd/xsd^2
-    beta1mu <- zbeta1mu*ysd/xsd - 2*zbeta2mu*xm*ysd/xsd^2  
-    beta0mu <- zbeta0mu*ysd  + ym - zbeta1mu*xm*ysd/xsd + zbeta2mu*xm^2*ysd/xsd^2 
-    sigma <- zsigma * ysd
-  }
+  }  
   " # close quote for modelString
+  
   # Write out modelString to a text file
   writeLines( modelString , con="TEMPmodel.txt" )
   #-----------------------------------------------------------------------------
@@ -102,7 +139,7 @@ genMCMC <<- function( data , xName="x" , yName="y" , sName="s" , wName=NULL ,
   nuInit = 10 # arbitrary
   initsList = list(
     zsigma=sigmaInit  ,
-    nuMinusOne=nuInit ,
+    nu=nuInit ,
     zbeta0mu=b0init ,
     zbeta1mu=b1init ,
     zbeta2mu=b2init ,
@@ -120,26 +157,33 @@ genMCMC <<- function( data , xName="x" , yName="y" , sName="s" , wName=NULL ,
                   "sigma" , "nu" , 
                   "zsigma", "zbeta0sigma" , "zbeta1sigma", "zbeta2sigma" )
   adaptSteps = 1000  # Number of steps to "tune" the samplers
-  burnInSteps = 10000 
-  runJagsOut <- run.jags( method=runjagsMethod ,
-                          model="TEMPmodel.txt" , 
-                          monitor=parameters , 
-                          data=dataList ,  
-                          inits=initsList , 
-                          n.chains=nChains ,
-                          adapt=adaptSteps ,
-                          burnin=burnInSteps , 
-                          sample=ceiling(numSavedSteps/nChains) ,
-                          thin=thinSteps ,
-                          summarise=FALSE ,
-                          plots=FALSE )
-  codaSamples = as.mcmc.list( runJagsOut )
+  burnInSteps = 2000 
+  nChains = 3 
+  
+  # Translate to C++ and compile to DSO:
+  stanDso <- stan_model( model_code=modelString ) 
+  # Get MC sample of posterior:
+  stanFit <- sampling( object=stanDso , 
+                       data = dataList , 
+                       #pars = parameters , # optional
+                       #init = initsList , # optional  
+                       chains = nChains ,
+                       iter = ( ceiling(numSavedSteps/nChains)*thinSteps
+                                +burnInSteps ) , 
+                       warmup = burnInSteps , 
+                       thin = thinSteps )
+  # For consistency with JAGS-oriented functions in DBDA2E collection, 
+  # convert stan format to coda format:
+  codaSamples = mcmc.list( lapply( 1:ncol(stanFit) , 
+                                   function(x) { mcmc(as.array(stanFit)[,x,]) } ) )
   # resulting codaSamples object has these indices: 
   #   codaSamples[[ chainIdx ]][ stepIdx , paramIdx ]
-
   if ( !is.null(saveName) ) {
     save( codaSamples , file=paste(saveName,"Mcmc.Rdata",sep="") )
-  }
+    save( stanFit , file=paste(saveName,"StanFit.Rdata",sep="") )
+    save( stanDso , file=paste(saveName,"StanDso.Rdata",sep="") )
+  }  
+  
   return( codaSamples )
 } # end function
 
@@ -325,4 +369,5 @@ plotMCMC <<- function( codaSamples , data ,
   }
 }
 }
+
 #===============================================================================
